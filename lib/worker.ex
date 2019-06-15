@@ -1,5 +1,15 @@
 defmodule Metex.Worker do
-  use GenServer
+  def loop do
+    receive do
+      {sender_pid, location} ->
+        send(sender_pid, {:ok, temperature_of(location)})
+
+      _ ->
+        IO.puts("don't know how to process this message")
+    end
+
+    loop()
+  end
 
   def temperature_of(location) do
     result =
@@ -19,7 +29,13 @@ defmodule Metex.Worker do
 
   defp url_for(location) do
     location = URI.encode(location)
-    "http://api.openweathermap.org/data/2.5/weather?q=#{location}&appid=#{apikey}"
+    "http://api.openweathermap.org/data/2.5/weather?q=#{location}&appid=#{apikey()}"
+  end
+
+  defp parse_response({:ok, %HTTPoison.Response{body: body, status_code: 200}}) do
+    body
+    |> JSON.decode!()
+    |> compute_temperature
   end
 
   defp parse_response(_) do
@@ -39,6 +55,6 @@ defmodule Metex.Worker do
   end
 
   defp apikey do
-    Application.get_env(:my_app, :api_key)
+    Application.get_env(:metex, :api_key)
   end
 end
