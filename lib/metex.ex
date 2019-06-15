@@ -8,4 +8,11 @@ defmodule Metex do
       send(worker_pid, {coordinator_pid, city})
     end)
   end
+
+  def pingpong do
+    first = spawn(Metex.PingPong, :loop, [])
+    second = spawn(Metex.PingPong, :loop, [])
+
+    send(first, {second, :ping})
+  end
 end
